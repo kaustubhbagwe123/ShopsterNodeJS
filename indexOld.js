@@ -9,19 +9,13 @@ let config = require("./config.js");
 
 const app = express();
 const server = http.createServer(app);
-var redis = require('redis');
-var client = redis.createClient('6379', '10.50.250.21');
-client.on('connect', function() {
-  console.log('redis connected');
-});
-
-
-
 // const server=http.createServer(app);
 const io = socketio(server,{'pingInterval': 3000});
 let people = [];
-//SQL Connection
-let Connectionconfig = {host:'',user:'',password:'',database:'', charset : 'utf8mb4'};
+
+
+
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(bodyParser.raw());
@@ -55,42 +49,12 @@ app.post("/api/sendreply", function (req, res) {
 
   if(objectValue["Mobile"]!=null && objectValue["Mobile"]!='' && objectValue["ProgramCode"]!=null && objectValue["ProgramCode"]!=''){
 ///Connaction 
-client.get('Con'+objectValue["ProgramCode"], function(err, reply) {
-  // console.log(reply);
-  var stringCon = JSON.stringify(reply.slice(1)).split(';');
-  for (i = 0; i < stringCon.length; i++) {
-    debugger
-    var data=stringCon[i];
-    var splitdata=data.split('=');
-    // console.log(splitdata[0]);
-    // console.log(splitdata[1]);
-    if(splitdata[0]=='"server'){
-      Connectionconfig['host']=splitdata[1];
-    }
-    if(splitdata[0]=='userid'){
-      Connectionconfig.user=splitdata[1];
-    }
-    if(splitdata[0]=='password'){
-      Connectionconfig.password=splitdata[1];
-    }
-    if(splitdata[0]=='database'){
-      Connectionconfig.database=splitdata[1].replace(/\\/g, '').replace('"','').replace('"','');
-    }
-  }
-
-  console.log(Connectionconfig);
-});
-
-
     try{
       io.emit(objectValue["Mobile"] + (objectValue["ProgramCode"]).toLowerCase(), response);
     }
     catch(e){
-      client.get('Con'+objectValue["ProgramCode"], function(err, reply) {
-        console.log(reply);
-        Connectionconfig.host=reply;
-      });
-      let connection1 = mysql.createConnection(Connectionconfig);
+
+      let connection1 = mysql.createConnection(config);
       let sql1 =
         'CALL SP_HSWeebhookChatInsert("' + objectValue["ProgramCode"] + '","' + e.message + '",1,"' + objectValue["Mobile"] +'",' + btrply +")";
       console.log(sql1);
@@ -102,14 +66,16 @@ client.get('Con'+objectValue["ProgramCode"], function(err, reply) {
       });
       connection.end();
     }
+
+      
   var btrply = 0;
   var botreply = objectValue["botreply"];
   if (botreply) {
     btrply = 1;
   }
   console.log("botreply :" + btrply);
-  
-  let connection = mysql.createConnection(Connectionconfig);
+
+  let connection = mysql.createConnection(config);
   let sql =
     'CALL SP_HSWeebhookChatInsert("' + objectValue["ProgramCode"] + '",?,1,"' + objectValue["Mobile"] +'",' + btrply +")";
   console.log(sql);
